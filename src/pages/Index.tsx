@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -12,6 +12,12 @@ const Index = () => {
   const [cameraAngle, setCameraAngle] = useState([45]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [animationStep, setAnimationStep] = useState(0);
+  const [boobaPos, setBoobaPos] = useState({ x: 0, y: 0, scale: 1 });
+  const [grandmaPos, setGrandmaPos] = useState({ x: 200, y: 0, scale: 0 });
+  const [showDialog, setShowDialog] = useState(false);
+  const [boobaEmotion, setBoobaEmotion] = useState('😊');
+  const [grandmaEmotion, setGrandmaEmotion] = useState('😠');
 
   const characters = [
     { id: 'booba', name: 'Буба', emoji: '🐭' },
@@ -30,6 +36,58 @@ const Index = () => {
     { frame: 180, action: 'Диалог', duration: '0:06' },
     { frame: 240, action: 'Реакция Бубы', duration: '0:08' }
   ];
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setAnimationStep((prev) => {
+        if (prev >= 4) {
+          setIsPlaying(false);
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    switch (animationStep) {
+      case 0:
+        setBoobaPos({ x: 0, y: 0, scale: 1 });
+        setGrandmaPos({ x: 200, y: 0, scale: 0 });
+        setShowDialog(false);
+        setBoobaEmotion('😊');
+        setCurrentFrame(0);
+        break;
+      case 1:
+        setGrandmaPos({ x: 150, y: 0, scale: 1 });
+        setCurrentFrame(120);
+        break;
+      case 2:
+        setGrandmaPos({ x: 100, y: 0, scale: 1 });
+        setShowDialog(true);
+        setGrandmaEmotion('😠');
+        setCurrentFrame(180);
+        break;
+      case 3:
+        setBoobaEmotion('😮');
+        setBoobaPos({ x: -20, y: -10, scale: 0.95 });
+        setCurrentFrame(240);
+        break;
+      case 4:
+        setBoobaPos({ x: -50, y: 0, scale: 0.8 });
+        setBoobaEmotion('😰');
+        break;
+    }
+  }, [animationStep]);
+
+  const resetAnimation = () => {
+    setIsPlaying(false);
+    setAnimationStep(0);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -165,31 +223,59 @@ const Index = () => {
             <Card className="w-[800px] h-[500px] bg-gradient-to-b from-card to-card/80 border-2 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-orange-900/10 to-red-900/20" />
               
+              <div className="absolute top-4 left-4 bg-muted/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+                <p className="text-xs text-muted-foreground">🏠 Советская кухня</p>
+              </div>
+
+              <div className="absolute top-4 right-4 bg-muted/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+                <p className="text-xs text-muted-foreground">💡 Тёплый свет {lightIntensity[0]}%</p>
+              </div>
+              
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center space-y-4">
-                  <div className="flex items-center justify-center gap-6">
-                    <div className="relative">
-                      <div className="text-8xl animate-pulse">🐭</div>
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                  <div className="flex items-center justify-center gap-12 relative">
+                    <div 
+                      className="relative transition-all duration-700"
+                      style={{ 
+                        transform: `translate(${boobaPos.x}px, ${boobaPos.y}px) scale(${boobaPos.scale})`,
+                      }}
+                    >
+                      <div className="text-9xl">{boobaEmotion === '😊' ? '🐭' : boobaEmotion === '😮' ? '😮' : '😰'}</div>
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground px-2 py-1 rounded whitespace-nowrap">
                         Буба
                       </div>
                     </div>
-                    <div className="text-6xl">🍲</div>
-                    <div className="relative">
-                      <div className="text-8xl">👵</div>
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
+                    
+                    <div className="text-7xl absolute left-1/2 -translate-x-1/2">
+                      🍲
+                    </div>
+                    
+                    <div 
+                      className="relative transition-all duration-700"
+                      style={{ 
+                        transform: `translateX(${grandmaPos.x}px) scale(${grandmaPos.scale})`,
+                        opacity: grandmaPos.scale
+                      }}
+                    >
+                      <div className="text-9xl">{grandmaEmotion}</div>
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded whitespace-nowrap">
                         Бабушка
                       </div>
                     </div>
                   </div>
+
+                  {showDialog && (
+                    <div className="absolute top-20 right-32 bg-destructive/90 text-destructive-foreground px-6 py-4 rounded-2xl rounded-tr-none animate-fade-in shadow-2xl">
+                      <p className="text-lg font-bold">
+                        "Эй! Вали отсюда чёрт!"
+                      </p>
+                    </div>
+                  )}
                   
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <div className="bg-muted/50 backdrop-blur-sm px-4 py-2 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Кухня 90-х</p>
-                    </div>
-                    <div className="bg-muted/50 backdrop-blur-sm px-4 py-2 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Динамическое освещение</p>
-                    </div>
+                  <div className="flex items-center justify-center gap-3 mt-12">
+                    <div className="text-3xl">🪑</div>
+                    <div className="text-3xl">📺</div>
+                    <div className="text-3xl">🧱</div>
                   </div>
                 </div>
               </div>
@@ -222,7 +308,7 @@ const Index = () => {
                   <Icon name={isPlaying ? 'Pause' : 'Play'} size={16} className="mr-2" />
                   {isPlaying ? 'Пауза' : 'Плей'}
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={resetAnimation}>
                   <Icon name="RotateCcw" size={16} />
                 </Button>
               </div>
